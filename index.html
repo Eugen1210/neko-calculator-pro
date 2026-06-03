@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>猫電卓PRO</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #151515;
+  color: #fff;
+}
+
+.app {
+  width: 100%;
+  max-width: 430px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 12px;
+  background: linear-gradient(#202020, #111);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.status {
+  font-size: 14px;
+  color: #ffd98a;
+}
+
+.display {
+  margin-top: 12px;
+  padding: 16px;
+  border-radius: 16px;
+  background: #050505;
+  text-align: right;
+  box-shadow: inset 0 0 10px #000;
+}
+
+#formula {
+  min-height: 24px;
+  font-size: 18px;
+  color: #aaa;
+  word-break: break-all;
+}
+
+#result {
+  min-height: 48px;
+  font-size: 40px;
+  font-weight: bold;
+  word-break: break-all;
+}
+
+.cat-lane {
+  position: relative;
+  height: 54px;
+  margin: 12px 0;
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.08);
+}
+
+.cat {
+  position: absolute;
+  bottom: 6px;
+  left: 0;
+  width: 42px;
+  height: 32px;
+  transition: transform .2s;
+}
+
+.cat-body {
+  position: absolute;
+  bottom: 0;
+  left: 7px;
+  width: 30px;
+  height: 22px;
+  background: #f7f1df;
+  border-radius: 50%;
+}
+
+.cat-head {
+  position: absolute;
+  bottom: 12px;
+  left: 0;
+  width: 24px;
+  height: 22px;
+  background: #f7f1df;
+  border-radius: 50%;
+}
+
+.cat-head::before,
+.cat-head::after {
+  content: "";
+  position: absolute;
+  top: -6px;
+  width: 9px;
+  height: 9px;
+  background: #f7f1df;
+  clip-path: polygon(50% 0, 0 100%, 100% 100%);
+}
+
+.cat-head::before { left: 2px; }
+.cat-head::after { right: 2px; }
+
+.cat-face {
+  position: absolute;
+  top: 8px;
+  left: 5px;
+  font-size: 10px;
+}
+
+.cat-tail {
+  position: absolute;
+  right: -2px;
+  bottom: 12px;
+  width: 16px;
+  height: 8px;
+  border-top: 4px solid #d4a56f;
+  border-radius: 50%;
+}
+
+.cat.walk {
+  animation: bob .45s infinite alternate;
+}
+
+@keyframes bob {
+  from { bottom: 6px; }
+  to { bottom: 9px; }
+}
+
+.cat.sleep .cat-face::after {
+  content: " Zzz";
+  color: #9ac7ff;
+  font-size: 12px;
+}
+
+.message {
+  text-align: center;
+  min-height: 24px;
+  color: #ffd98a;
+  font-size: 14px;
+}
+
+.buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+button {
+  height: 58px;
+  border: none;
+  border-radius: 14px;
+  font-size: 22px;
+  color: #fff;
+  background: #333;
+}
+
+button:active {
+  transform: scale(.96);
+}
+
+.op {
+  background: #d9822b;
+}
+
+.func {
+  background: #555;
+  font-size: 16px;
+}
+
+.equal {
+  background: #f39c12;
+}
+
+.tax {
+  background: #2f7d46;
+  font-size: 15px;
+}
+
+.history {
+  margin-top: 14px;
+  padding: 10px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.08);
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.history h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.history-item {
+  padding: 6px;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.rare {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.9);
+  z-index: 9999;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.rare-box {
+  max-width: 360px;
+  width: 100%;
+  padding: 16px;
+  border-radius: 18px;
+  background: white;
+  color: black;
+  text-align: center;
+}
+
+.rare-box img {
+  max-width: 100%;
+  border-radius: 12px;
+}
+
+.light {
+  background: #eee;
+  color: #222;
+}
+
+.light .app {
+  background: #f6f6f6;
+}
+
+.light .display {
+  background: white;
+}
+
+.light button {
+  background: #ddd;
+  color: #222;
+}
+
+.light .op,
+.light .equal {
+  background: #f39c12;
+  color: white;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <div class="header">
+    <h2>🐾 猫電卓PRO</h2>
+    <button class="func" onclick="toggleTheme()">🌙</button>
+  </div>
+
+  <div class="status">
+    Lv.<span id="level">1</span>
+    / EXP <span id="exp">0</span>/<span id="need">10</span>
+    / 💰 <span id="coin">0</span>
+  </div>
+
+  <div class="display">
+    <div id="formula"></div>
+    <div id="result">0</div>
+  </div>
+
+  <div class="cat-lane">
+    <div id="cat" class="cat walk">
+      <div class="cat-tail"></div>
+      <div class="cat-body"></div>
+      <div class="cat-head">
+        <div class="cat-face">•ᴗ•</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="message" id="message">計算するにゃ！</div>
+
+  <div class="buttons">
+    <button class="func" onclick="clearAll()">C</button>
+    <button class="func" onclick="backspace()">⌫</button>
+    <button class="func" onclick="undo()">↶</button>
+    <button class="op" onclick="append('/')">÷</button>
+
+    <button onclick="append('7')">7</button>
+    <button onclick="append('8')">8</button>
+    <button onclick="append('9')">9</button>
+    <button class="op" onclick="append('*')">×</button>
+
+    <button onclick="append('4')">4</button>
+    <button onclick="append('5')">5</button>
+    <button onclick="append('6')">6</button>
+    <button class="op" onclick="append('-')">−</button>
+
+    <button onclick="append('1')">1</button>
+    <button onclick="append('2')">2</button>
+    <button onclick="append('3')">3</button>
+    <button class="op" onclick="append('+')">＋</button>
+
+    <button onclick="append('0')">0</button>
+    <button onclick="append('.')">.</button>
+    <button class="equal" onclick="calculate()">=</button>
+    <button class="func" onclick="toggleSign()">±</button>
+
+    <button class="tax" onclick="divideBy11()">÷11</button>
+    <button class="tax" onclick="taxExcluded()">税抜</button>
+    <button class="tax" onclick="taxAmount()">税額</button>
+    <button class="func" onclick="clearHistory()">履歴消</button>
+  </div>
+
+  <div class="history">
+    <h3>計算履歴</h3>
+    <div id="historyList"></div>
+  </div>
+
+</div>
+
+<div id="rare" class="rare" onclick="closeRare()">
+  <div class="rare-box">
+    <h2>✨超激レア✨</h2>
+    <p>関羽、ハーレーで参上！</p>
+    <img src="guan_harley.png" alt="関羽ハーレー">
+    <p>guan_harley.png を同じフォルダに置くと表示されます</p>
+    <button onclick="closeRare()">閉じる</button>
+  </div>
+</div>
+
+<script>
+let formula = "";
+let undoStack = [];
+let history = JSON.parse(localStorage.getItem("catCalcHistory") || "[]");
+
+let level = Number(localStorage.getItem("catLevel") || 1);
+let exp = Number(localStorage.getItem("catExp") || 0);
+let need = Number(localStorage.getItem("catNeed") || 10);
+let coin = Number(localStorage.getItem("catCoin") || 0);
+
+const formulaEl = document.getElementById("formula");
+const resultEl = document.getElementById("result");
+const messageEl = document.getElementById("message");
+const cat = document.getElementById("cat");
+
+function updateDisplay() {
+  formulaEl.textContent = formula;
+  resultEl.textContent = formula || "0";
+}
+
+function saveStatus() {
+  localStorage.setItem("catLevel", level);
+  localStorage.setItem("catExp", exp);
+  localStorage.setItem("catNeed", need);
+  localStorage.setItem("catCoin", coin);
+  localStorage.setItem("catCalcHistory", JSON.stringify(history));
+}
+
+function updateStatus() {
+  document.getElementById("level").textContent = level;
+  document.getElementById("exp").textContent = exp;
+  document.getElementById("need").textContent = need;
+  document.getElementById("coin").textContent = coin;
+  saveStatus();
+}
+
+function append(v) {
+  undoStack.push(formula);
+  formula += v;
+  updateDisplay();
+}
+
+function clearAll() {
+  undoStack.push(formula);
+  formula = "";
+  updateDisplay();
+  say("すっきりしたにゃ！");
+}
+
+function backspace() {
+  undoStack.push(formula);
+  formula = formula.slice(0, -1);
+  updateDisplay();
+}
+
+function undo() {
+  if (undoStack.length > 0) {
+    formula = undoStack.pop();
+    updateDisplay();
+    say("戻したにゃ");
+  }
+}
+
+function calculate() {
+  if (!formula) return;
+
+  try {
+    const before = formula;
+    const answer = Function("return (" + formula + ")")();
+
+    formula = String(answer);
+    resultEl.textContent = formula;
+    formulaEl.textContent = before + " =";
+
+    addHistory(before, answer);
+    gainExp();
+
+    catHappy();
+
+    if (Math.random() <= 0.001) {
+      showRare();
+    }
+
+  } catch {
+    resultEl.textContent = "ERROR";
+    catError();
+  }
+}
+
+function addHistory(before, answer) {
+  history.unshift({
+    before,
+    answer,
+    time: new Date().toLocaleTimeString()
+  });
+
+  history = history.slice(0, 30);
+  renderHistory();
+  saveStatus();
+}
+
+function renderHistory() {
+  const list = document.getElementById("historyList");
+  list.innerHTML = "";
+
+  history.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "history-item";
+    div.textContent = item.before + " = " + item.answer;
+    div.onclick = () => {
+      formula = item.before;
+      updateDisplay();
+    };
+    list.appendChild(div);
+  });
+}
+
+function clearHistory() {
+  history = [];
+  renderHistory();
+  saveStatus();
+}
+
+function gainExp() {
+  exp += 1;
+  coin += 5;
+
+  if (exp >= need) {
+    exp -= need;
+    level += 1;
+    need = Math.floor(need * 1.35);
+    say("レベルアップにゃ！");
+    catLevelUp();
+  } else {
+    say("計算できたにゃ！");
+  }
+
+  updateStatus();
+}
+
+function divideBy11() {
+  if (!formula) return;
+  undoStack.push(formula);
+  formula = String((Number(formula) / 11).toFixed(2));
+  updateDisplay();
+  say("インボイス計算にゃ");
+}
+
+function taxExcluded() {
+  if (!formula) return;
+  undoStack.push(formula);
+  formula = String((Number(formula) / 1.1).toFixed(2));
+  updateDisplay();
+  say("税抜にしたにゃ");
+}
+
+function taxAmount() {
+  if (!formula) return;
+  undoStack.push(formula);
+  const v = Number(formula);
+  formula = String((v - v / 1.1).toFixed(2));
+  updateDisplay();
+  say("税額だにゃ");
+}
+
+function toggleSign() {
+  if (!formula) return;
+  undoStack.push(formula);
+  if (formula.startsWith("-")) {
+    formula = formula.slice(1);
+  } else {
+    formula = "-" + formula;
+  }
+  updateDisplay();
+}
+
+function say(text) {
+  messageEl.textContent = text;
+}
+
+function catHappy() {
+  cat.querySelector(".cat-face").textContent = "≧ᴗ≦";
+  say("やったにゃ！");
+  setTimeout(() => {
+    cat.querySelector(".cat-face").textContent = "•ᴗ•";
+  }, 1200);
+}
+
+function catError() {
+  cat.querySelector(".cat-face").textContent = "°ロ°";
+  say("にゃ！？");
+  setTimeout(() => {
+    cat.querySelector(".cat-face").textContent = "•ᴗ•";
+  }, 1200);
+}
+
+function catLevelUp() {
+  cat.querySelector(".cat-face").textContent = "★ᴗ★";
+  setTimeout(() => {
+    cat.querySelector(".cat-face").textContent = "•ᴗ•";
+  }, 1800);
+}
+
+let catX = 0;
+let catDir = 1;
+let sleeping = false;
+
+setInterval(() => {
+  if (sleeping) return;
+
+  const lane = document.querySelector(".cat-lane");
+  const maxX = lane.clientWidth - 45;
+
+  catX += catDir * 1.2;
+
+  if (catX >= maxX) {
+    catDir = -1;
+    cat.style.transform = "scaleX(-1)";
+  }
+
+  if (catX <= 0) {
+    catDir = 1;
+    cat.style.transform = "scaleX(1)";
+  }
+
+  cat.style.left = catX + "px";
+}, 35);
+
+setInterval(() => {
+  if (Math.random() < 0.25) {
+    sleeping = true;
+    cat.classList.add("sleep");
+    cat.querySelector(".cat-face").textContent = "－ᴗ－";
+    say("ちょっと寝るにゃ…");
+
+    setTimeout(() => {
+      sleeping = false;
+      cat.classList.remove("sleep");
+      cat.querySelector(".cat-face").textContent = "•ᴗ•";
+      say("起きたにゃ！");
+    }, 4000);
+  }
+}, 14000);
+
+function toggleTheme() {
+  document.body.classList.toggle("light");
+}
+
+function showRare() {
+  document.getElementById("rare").style.display = "flex";
+}
+
+function closeRare() {
+  document.getElementById("rare").style.display = "none";
+}
+
+document.addEventListener("keydown", e => {
+  if ("0123456789+-*/.".includes(e.key)) {
+    append(e.key);
+  }
+
+  if (e.key === "Enter") {
+    calculate();
+  }
+
+  if (e.key === "Backspace") {
+    backspace();
+  }
+
+  if (e.key === "Escape") {
+    clearAll();
+  }
+});
+
+renderHistory();
+updateStatus();
+updateDisplay();
+</script>
+
+</body>
+</html>
