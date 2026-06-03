@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>ねこ電卓</title>
 <link rel="icon" href="icon.png">
 <link rel="apple-touch-icon" href="icon.png">
@@ -11,6 +11,19 @@
 * {
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  touch-action: manipulation;
+  overscroll-behavior: none;
+}
+
+button,
+input,
+select,
+textarea {
+  touch-action: manipulation;
 }
 
 :root {
@@ -208,13 +221,8 @@ button:active {
   clip-path: polygon(50% 0, 0 100%, 100% 100%);
 }
 
-.cat-head::before {
-  left: 2px;
-}
-
-.cat-head::after {
-  right: 2px;
-}
+.cat-head::before { left: 2px; }
+.cat-head::after { right: 2px; }
 
 .cat-face {
   position: absolute;
@@ -291,7 +299,7 @@ button:active {
 
 .memory-row {
   display: grid;
-  grid-template-columns: 30px 1fr 48px 48px;
+  grid-template-columns: 28px 1fr 70px;
   gap: 6px;
   align-items: center;
   margin: 6px 0;
@@ -304,7 +312,20 @@ button:active {
   border-radius: 8px;
 }
 
-.memory-row button {
+.memory-value {
+  font-size: 13px;
+  text-align: right;
+  color: var(--muted);
+}
+
+.memory-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.memory-actions button {
   height: 34px;
   font-size: 13px;
   border-radius: 10px;
@@ -312,7 +333,7 @@ button:active {
 
 .graph-row {
   display: grid;
-  grid-template-columns: 30px 1fr 76px;
+  grid-template-columns: 72px 1fr 76px;
   gap: 6px;
   align-items: center;
   margin: 7px 0;
@@ -417,7 +438,6 @@ button:active {
     Lv.<span id="level">1</span>
     / EXP <span id="exp">0</span>/<span id="need">10</span>
     / 💰 <span id="coin">0</span>
-
     <div class="expbar">
       <div id="expFill"></div>
     </div>
@@ -474,9 +494,8 @@ button:active {
   </div>
 
   <div class="card">
-    <h2>📌 保存メモリー A〜E</h2>
+    <h2>📌 名前付きメモリー A〜E</h2>
     <div id="memoryArea"></div>
-
     <div class="summary">
       例：A+B+C、A+B-C のように式へ入れて計算できます。
     </div>
@@ -510,9 +529,7 @@ button:active {
 let formula = "";
 let undoStack = [];
 
-let history = JSON.parse(
-  localStorage.getItem("nekoCalcHistory") || "[]"
-);
+let history = JSON.parse(localStorage.getItem("nekoCalcHistory") || "[]");
 
 let level = Number(localStorage.getItem("nekoLevel") || 1);
 let exp = Number(localStorage.getItem("nekoExp") || 0);
@@ -542,7 +559,6 @@ function say(text) {
 
 function pushUndo() {
   undoStack.push(formula);
-
   if (undoStack.length > 50) {
     undoStack.shift();
   }
@@ -603,7 +619,6 @@ function undo() {
 
 function toggleSign() {
   if (!formula) return;
-
   pushUndo();
 
   if (formula.startsWith("-")) {
@@ -651,7 +666,6 @@ function calculate() {
     const answer = evalFormula(formula);
 
     formula = String(answer);
-
     formulaEl.textContent = before + " =";
     resultEl.textContent = formula;
 
@@ -677,7 +691,6 @@ function addHistory(before, answer) {
   });
 
   history = history.slice(0, 40);
-
   renderHistory();
   save();
 }
@@ -687,8 +700,7 @@ function renderHistory() {
   list.innerHTML = "";
 
   if (history.length === 0) {
-    list.innerHTML =
-      '<div class="history-item">まだ履歴はないにゃ</div>';
+    list.innerHTML = '<div class="history-item">まだ履歴はないにゃ</div>';
     return;
   }
 
@@ -784,17 +796,23 @@ function renderMemories() {
   area.innerHTML = "";
 
   ["A", "B", "C", "D", "E"].forEach(key => {
-    const row = document.createElement("div");
-    row.className = "memory-row";
+    const box = document.createElement("div");
 
-    row.innerHTML = `
-      <b>${key}</b>
-      <input value="${memories[key].label}" onchange="renameMemory('${key}', this.value)">
-      <button onclick="saveMemory('${key}')">保存</button>
-      <button onclick="insertMemory('${key}')">挿入</button>
+    box.innerHTML = `
+      <div class="memory-row">
+        <b>${key}</b>
+        <input value="${memories[key].label}" onchange="renameMemory('${key}', this.value)">
+        <div class="memory-value">${memories[key].value}</div>
+      </div>
+
+      <div class="memory-actions">
+        <button onclick="saveMemory('${key}')">保存</button>
+        <button onclick="insertMemory('${key}')">挿入</button>
+        <button onclick="clearMemory('${key}')">消去</button>
+      </div>
     `;
 
-    area.appendChild(row);
+    area.appendChild(box);
   });
 
   renderGraph();
@@ -809,7 +827,6 @@ function renameMemory(key, value) {
 function saveMemory(key) {
   try {
     const value = Number(evalFormula(formula));
-
     memories[key].value = value;
 
     save();
@@ -828,6 +845,13 @@ function insertMemory(key) {
   say(key + "を入れたにゃ");
 }
 
+function clearMemory(key) {
+  memories[key].value = 0;
+  save();
+  renderMemories();
+  say(key + "を消去したにゃ");
+}
+
 function renderGraph() {
   const area = document.getElementById("graphArea");
   area.innerHTML = "";
@@ -839,7 +863,6 @@ function renderGraph() {
   });
 
   const max = Math.max(...values, 1);
-
   let total = 0;
 
   keys.forEach(key => {
@@ -852,7 +875,7 @@ function renderGraph() {
     row.className = "graph-row";
 
     row.innerHTML = `
-      <b>${key}</b>
+      <b>${key}<br><small>${memories[key].label}</small></b>
       <div class="graph-bg">
         <div class="graph-fill" style="width:${width}%"></div>
       </div>
@@ -972,6 +995,22 @@ document.addEventListener("keydown", event => {
     clearAll();
   }
 });
+
+let lastTouchEnd = 0;
+
+document.addEventListener("touchend", function(event) {
+  const now = Date.now();
+
+  if (now - lastTouchEnd <= 300) {
+    event.preventDefault();
+  }
+
+  lastTouchEnd = now;
+}, { passive: false });
+
+document.addEventListener("gesturestart", function(event) {
+  event.preventDefault();
+}, { passive: false });
 
 if (localStorage.getItem("nekoTheme") === "light") {
   document.body.classList.add("light");
